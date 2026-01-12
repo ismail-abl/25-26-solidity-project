@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RentArt - NFT Art Rental Platform</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .logo span { color: var(--secondary); }
+        
+        .wallet-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .address {
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        button:hover { background: var(--primary-dark); transform: translateY(-2px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--primary);
+        }
+        
+        .btn-success { background: var(--success); }
+        .btn-warning { background: var(--warning); color: #000; }
+        .btn-danger { background: var(--error); }
+        
+        nav {
+            background: var(--bg-card);
+            padding: 0.5rem 2rem;
+            display: flex;
+            gap: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        nav button {
+            background: transparent;
+            padding: 0.75rem 1.25rem;
+            border-radius: 4px;
+        }
+        
+        nav button.active { background: var(--primary); }
+        nav button:hover:not(.active) { background: rgba(255,255,255,0.1); }
+        
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .section { display: none; }
+        .section.active { display: block; }
+        
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .card h2 {
+            margin-bottom: 1rem;
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 0.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: var(--text);
+            font-size: 1rem;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .artwork-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+        
+        .artwork-card:hover { transform: translateY(-5px); }
+        
+        .artwork-image {
+            height: 200px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+        
+        .artwork-info {
+            padding: 1rem;
+        }
+        
+        .artwork-info h3 { margin-bottom: 0.5rem; }
+        
+        .artwork-meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .badge-available { background: var(--success); }
+        .badge-rented { background: var(--warning); color: #000; }
+        .badge-physical { background: var(--secondary); }
+        .badge-digital { background: var(--primary); }
+        
+        .status-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .status-item {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .status-item h3 {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-item .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .roles-list {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+        
+        .role-badge {
+            background: var(--primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        th { color: var(--text-muted); font-weight: normal; }
+        
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--error); }
+        .toast.info { background: var(--primary); }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal.active { display: flex; }
+        
+        .modal-content {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .checkbox-group input { width: auto; }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">🎨 Rent<span>Art</span></div>
+        <div class="wallet-info">
+            <div id="networkInfo" class="address" style="display: none;">
+                Network: <span id="networkName">-</span>
+            </div>
+            <div id="walletAddress" class="address" style="display: none;">
+                <span id="addressText">-</span>
+            </div>
+            <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+        </div>
+    </header>
+    
+    <nav id="mainNav">
+        <button class="active" data-section="dashboard">Dashboard</button>
+        <button data-section="browse">Browse Art</button>
+        <button data-section="myRentals">My Rentals</button>
+        <button data-section="artist" id="artistNav" style="display: none;">Artist Panel</button>
+        <button data-section="admin" id="adminNav" style="display: none;">Admin</button>
+        <button data-section="disputes">Disputes</button>
+    </nav>
+    
+    <main>
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section active">
+            <h1 style="margin-bottom: 1.5rem;">Welcome to RentArt</h1>
+            
+            <div class="status-panel">
+                <div class="status-item">
+                    <h3>Registration Status</h3>
+                    <div class="value" id="regStatus">Not Registered</div>
+                </div>
+                <div class="status-item">
+                    <h3>KYC Status</h3>
+                    <div class="value" id="kycStatus">Not Verified</div>
+                </div>
+                <div class="status-item">
+                    <h3>Token Balance</h3>
+                    <div class="value" id="tokenBalance">0 RAT</div>
+                </div>
+                <div class="status-item">
+                    <h3>Your Roles</h3>
+                    <div class="roles-list" id="userRoles">
+                        <span class="role-badge">None</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Quick Actions</h2>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button id="registerBtn" onclick="registerUser()">Register as User</button>
+                    <button onclick="showSection('browse')">Browse Artworks</button>
+                    <button onclick="showSection('myRentals')">View My Rentals</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Platform Statistics</h2>
+                <div class="status-panel" style="margin-bottom: 0;">
+                    <div class="status-item">
+                        <h3>Total Artworks</h3>
+                        <div class="value" id="totalArtworks">-</div>
+                    </div>
+                    <div class="status-item">
+                        <h3>Active Rentals</h3>
+                        <div class="value" id="activeRentals">-</div>
+                    </div>
+                    <div class="status-item">
+                        <h3>Platform Fee</h3>
+                        <div class="value">5%</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Browse Art Section -->
+        <section id="browse" class="section">
+            <h1 style="margin-bottom: 1.5rem;">Browse Artworks</h1>
+            
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <input type="text" id="searchArt" placeholder="Search artworks..." style="max-width: 300px;">
+                    <select id="filterType" style="max-width: 150px;">
+                        <option value="all">All Types</option>
+                        <option value="physical">Physical</option>
+                        <option value="digital">Digital</option>
+                    </select>
+                    <select id="filterStatus" style="max-width: 150px;">
+                        <option value="all">All Status</option>
+                        <option value="available">Available</option>
+                        <option value="rented">Rented</option>
+                    </select>
+                    <button onclick="loadArtworks()">Search</button>
+                </div>
+            </div>
+            
+            <div class="grid" id="artworkGrid">
+                <!-- Artworks loaded dynamically -->
+            </div>
+        </section>
+        
+        <!-- My Rentals Section -->
+        <section id="myRentals" class="section">
+            <h1 style="margin-bottom: 1.5rem;">My Rentals</h1>
+            
+            <div class="card">
+                <h2>Active Rentals</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rental ID</th>
+                            <th>Artwork</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Deposit</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rentalsTable">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-muted);">
+                                No active rentals
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- Artist Panel Section -->
+        <section id="artist" class="section">
+            <h1 style="margin-bottom: 1.5rem;">Artist Panel</h1>
+            
+            <div class="card">
+                <h2>Tokenize New Artwork</h2>
+                <form id="tokenizeForm" onsubmit="tokenizeArtwork(event)">
+                    <div class="form-group">
+                        <label>Artwork URI (IPFS/URL)</label>
+                        <input type="text" id="artworkUri" placeholder="ipfs://..." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Price Per Day (in RAT tokens)</label>
+                        <input type="number" id="pricePerDay" placeholder="100" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Deposit Amount (in RAT tokens)</label>
+                        <input type="number" id="depositAmount" placeholder="500" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="isPhysical">
+                            <label for="isPhysical" style="margin-bottom: 0;">Physical Artwork</label>
+                        </div>
+                    </div>
+                    <button type="submit">Tokenize Artwork</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2>My Artworks</h2>
+                <div class="grid" id="myArtworksGrid">
+                    <!-- Artist's artworks loaded dynamically -->
+                </div>
+            </div>
+        </section>
+        
+        <!-- Admin Section -->
+        <section id="admin" class="section">
+            <h1 style="margin-bottom: 1.5rem;">Admin Panel</h1>
+            
+            <div class="card">
+                <h2>Verify User KYC</h2>
+                <div style="display: flex; gap: 1rem;">
+                    <input type="text" id="kycAddress" placeholder="User address (0x...)" style="flex: 1;">
+                    <button onclick="verifyKYC()">Verify KYC</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Grant Roles</h2>
+                <div class="form-group">
+                    <label>User Address</label>
+                    <input type="text" id="roleAddress" placeholder="0x...">
+                </div>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button onclick="grantRole('curator')">Grant Curator</button>
+                    <button onclick="grantRole('arbiter')">Grant Arbiter</button>
+                    <button onclick="grantRole('artist')">Grant Artist (Curator only)</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Verify Artist (Curator)</h2>
+                <div style="display: flex; gap: 1rem;">
+                    <input type="text" id="artistAddress" placeholder="Artist address (0x...)" style="flex: 1;">
+                    <button onclick="verifyArtist()">Verify Artist</button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Disputes Section -->
+        <section id="disputes" class="section">
+            <h1 style="margin-bottom: 1.5rem;">Disputes</h1>
+            
+            <div class="card">
+                <h2>Open a Dispute</h2>
+                <div class="form-group">
+                    <label>Rental ID</label>
+                    <input type="number" id="disputeRentalId" placeholder="Rental ID" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Reason</label>
+                    <textarea id="disputeReason" rows="3" placeholder="Describe the issue..."></textarea>
+                </div>
+                <button onclick="createDispute()">Submit Dispute</button>
+            </div>
+            
+            <div class="card" id="arbiterPanel" style="display: none;">
+                <h2>Arbiter Panel - Active Disputes</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Dispute ID</th>
+                            <th>Rental ID</th>
+                            <th>Initiator</th>
+                            <th>Votes For</th>
+                            <th>Votes Against</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="disputesTable">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-muted);">
+                                No active disputes
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Rent Modal -->
+    <div class="modal" id="rentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Rent Artwork</h2>
+                <button class="modal-close" onclick="closeModal('rentModal')">&times;</button>
+            </div>
+            <form onsubmit="rentArtwork(event)">
+                <input type="hidden" id="rentTokenId">
+                <div class="form-group">
+                    <label>Artwork: <span id="rentArtworkName"></span></label>
+                </div>
+                <div class="form-group">
+                    <label>Price per day: <span id="rentPricePerDay"></span> RAT</label>
+                </div>
+                <div class="form-group">
+                    <label>Deposit required: <span id="rentDeposit"></span> RAT</label>
+                </div>
+                <div class="form-group">
+                    <label>Duration (days)</label>
+                    <input type="number" id="rentDuration" min="1" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Total Cost: <span id="rentTotalCost">0</span> RAT</label>
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="allowSublease">
+                        <label for="allowSublease" style="margin-bottom: 0;">Allow Sublease</label>
+                    </div>
+                </div>
+                <button type="submit" style="width: 100%;">Confirm Rental</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Sublease Modal -->
+    <div class="modal" id="subleaseModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Sublease Artwork</h2>
+                <button class="modal-close" onclick="closeModal('subleaseModal')">&times;</button>
+            </div>
+            <form onsubmit="subleaseArtwork(event)">
+                <input type="hidden" id="subleaseRentalId">
+                <div class="form-group">
+                    <label>New Renter Address</label>
+                    <input type="text" id="subleaseAddress" placeholder="0x..." required>
+                </div>
+                <div class="form-group">
+                    <label>Duration (days)</label>
+                    <input type="number" id="subleaseDuration" min="1" value="1" required>
+                </div>
+                <button type="submit" style="width: 100%;">Confirm Sublease</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ==================== CONTRACT CONFIGURATION ====================
+        // TODO: Update these addresses after deployment
+        const CONFIG = {
+            // Contract addresses - UPDATE THESE AFTER DEPLOYMENT
+            DAPP_ADDRESS: '0x0000000000000000000000000000000000000000',
+            PLATFORM_ADDRESS: '0x0000000000000000000000000000000000000000',
+            TOKEN_ADDRESS: '0x0000000000000000000000000000000000000000',
+            
+            // Chain ID (e.g., 1 for mainnet, 11155111 for Sepolia, 31337 for localhost)
+            CHAIN_ID: 31337,
+            CHAIN_NAME: 'Localhost'
+        };
+
+        // Contract ABIs (simplified - include full ABIs for production)
+        const DAPP_ABI = [
+            "function registerUser() external",
+            "function verifyUserKYC(address user) external",
+            "function grantArtistRole(address user) external",
+            "function grantCuratorRole(address user) external",
+            "function grantArbiterRole(address user) external",
+            "function createArtwork(string uri, uint256 pricePerDay, uint256 depositAmount, bool isPhysical) external returns (uint256)",
+            "function rent(uint256 tokenId, uint256 durationDays, bool allowSublease) external returns (uint256)",
+            "function returnRental(uint256 rentalId) external",
+            "function sublease(uint256 rentalId, address newRenter, uint256 durationDays) external",
+            "function openDispute(uint256 rentalId, string reason) external returns (uint256)",
+            "function voteDispute(uint256 disputeId, bool inFavorOfRenter) external",
+            "function getUserRentals(address user) external view returns (uint256[])",
+            "function getArtistArtworks(address artist) external view returns (uint256[])",
+            "function isUserRegistered(address user) external view returns (bool)",
+            "function isKYCVerified(address user) external view returns (bool)",
+            "function userProfiles(address) external view returns (bool isRegistered, bool kycVerified, uint256 registrationTime)",
+            "function hasRole(bytes32 role, address account) external view returns (bool)",
+            "function ADMIN_ROLE() external view returns (bytes32)",
+            "function ARTIST_ROLE() external view returns (bytes32)",
+            "function RENTER_ROLE() external view returns (bytes32)",
+            "function CURATOR_ROLE() external view returns (bytes32)",
+            "function ARBITER_ROLE() external view returns (bytes32)"
+        ];
+
+        const PLATFORM_ABI = [
+            "function getArtwork(uint256 tokenId) external view returns (tuple(address artist, uint256 pricePerDay, uint256 depositAmount, bool isPhysical, bool isAvailable))",
+            "function getRental(uint256 rentalId) external view returns (address renter, uint256 tokenId, uint256 startTime, uint256 endTime, uint256 depositPaid, bool isActive)",
+            "function verifyArtist(address artist) external",
+            "function tokenURI(uint256 tokenId) external view returns (string)",
+            "function rentalCounter() external view returns (uint256)",
+            "function disputeCounter() external view returns (uint256)",
+            "function disputes(uint256) external view returns (uint256 rentalId, address initiator, string reason, uint256 votesFor, uint256 votesAgainst, bool resolved)"
+        ];
+
+        const TOKEN_ABI = [
+            "function balanceOf(address account) external view returns (uint256)",
+            "function approve(address spender, uint256 amount) external returns (bool)",
+            "function allowance(address owner, address spender) external view returns (uint256)",
+            "function decimals() external view returns (uint8)"
+        ];
+
+        // ==================== STATE VARIABLES ====================
+        let provider = null;
+        let signer = null;
+        let userAddress = null;
+        let dappContract = null;
+        let platformContract = null;
+        let tokenContract = null;
+        let tokenDecimals = 18;
+        let userRoles = {};
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            setupNavigation();
+            // Wait for ethereum to be injected (MetaMask may inject it after DOMContentLoaded)
+            if (window.ethereum) {
+                checkWalletConnection();
+            } else {
+                window.addEventListener('ethereum#initialized', checkWalletConnection, { once: true });
+                // Fallback: check after a short delay if the event doesn't fire
+                setTimeout(() => {
+                    if (window.ethereum) {
+                        checkWalletConnection();
+                    }
+                }, 500);
+            }
+        });
+
+        function setupNavigation() {
+            document.querySelectorAll('nav button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const section = btn.dataset.section;
+                    showSection(section);
+                });
+            });
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelector(`nav button[data-section="${sectionId}"]`).classList.add('active');
+            
+            // Load section-specific data
+            if (sectionId === 'browse') loadArtworks();
+            if (sectionId === 'myRentals') loadUserRentals();
+            if (sectionId === 'artist') loadArtistArtworks();
+        }
+
+        async function checkWalletConnection() {
+            if (window.ethereum) {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    await connectWallet();
+                }
+            }
+        }
+
+        // ==================== WALLET CONNECTION ====================
+        async function connectWallet() {
+            try {
+                // Check for ethereum provider with a small delay to ensure MetaMask has injected it
+                if (!window.ethereum) {
+                    // Wait a moment and check again
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                if (!window.ethereum) {
+                    showToast('Please install MetaMask or enable it for this site!', 'error');
+                    return;
+                }
+
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
+
+                // Check network
+                const network = await provider.getNetwork();
+                document.getElementById('networkName').textContent = network.name || `Chain ${network.chainId}`;
+                document.getElementById('networkInfo').style.display = 'block';
+
+                // Update UI
+                document.getElementById('addressText').textContent = 
+                    userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
+                document.getElementById('walletAddress').style.display = 'block';
+                document.getElementById('connectBtn').textContent = 'Connected';
+                document.getElementById('connectBtn').disabled = true;
+
+                // Initialize contracts
+                await initContracts();
+                await loadUserData();
+
+                // Listen for account changes
+                window.ethereum.on('accountsChanged', handleAccountsChanged);
+                window.ethereum.on('chainChanged', () => window.location.reload());
+
+                showToast('Wallet connected!', 'success');
+            } catch (error) {
+                console.error('Connection error:', error);
+                showToast('Failed to connect wallet', 'error');
+            }
+        }
+
+        async function handleAccountsChanged(accounts) {
+            if (accounts.length === 0) {
+                window.location.reload();
+            } else {
+                userAddress = accounts[0];
+                await loadUserData();
+            }
+        }
+
+        async function initContracts() {
+            dappContract = new ethers.Contract(CONFIG.DAPP_ADDRESS, DAPP_ABI, signer);
+            platformContract = new ethers.Contract(CONFIG.PLATFORM_ADDRESS, PLATFORM_ABI, signer);
+            tokenContract = new ethers.Contract(CONFIG.TOKEN_ADDRESS, TOKEN_ABI, signer);
+            
+            try {
+                tokenDecimals = await tokenContract.decimals();
+            } catch {
+                tokenDecimals = 18;
+            }
+        }
+
+        // ==================== USER DATA ====================
+        async function loadUserData() {
+            if (!dappContract || !userAddress) return;
+
+            try {
+                // Get user profile
+                const profile = await dappContract.userProfiles(userAddress);
+                document.getElementById('regStatus').textContent = 
+                    profile.isRegistered ? '✓ Registered' : 'Not Registered';
+                document.getElementById('regStatus').style.color = 
+                    profile.isRegistered ? 'var(--success)' : 'var(--text-muted)';
+                
+                document.getElementById('kycStatus').textContent = 
+                    profile.kycVerified ? '✓ Verified' : 'Not Verified';
+                document.getElementById('kycStatus').style.color = 
+                    profile.kycVerified ? 'var(--success)' : 'var(--text-muted)';
+
+                document.getElementById('registerBtn').disabled = profile.isRegistered;
+                document.getElementById('registerBtn').textContent = 
+                    profile.isRegistered ? 'Already Registered' : 'Register as User';
+
+                // Get token balance
+                const balance = await tokenContract.balanceOf(userAddress);
+                document.getElementById('tokenBalance').textContent = 
+                    ethers.utils.formatUnits(balance, tokenDecimals) + ' RAT';
+
+                // Check roles
+                await checkUserRoles();
+
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+
+        async function checkUserRoles() {
+            try {
+                const ADMIN_ROLE = await dappContract.ADMIN_ROLE();
+                const ARTIST_ROLE = await dappContract.ARTIST_ROLE();
+                const RENTER_ROLE = await dappContract.RENTER_ROLE();
+                const CURATOR_ROLE = await dappContract.CURATOR_ROLE();
+                const ARBITER_ROLE = await dappContract.ARBITER_ROLE();
+
+                userRoles = {
+                    admin: await dappContract.hasRole(ADMIN_ROLE, userAddress),
+                    artist: await dappContract.hasRole(ARTIST_ROLE, userAddress),
+                    renter: await dappContract.hasRole(RENTER_ROLE, userAddress),
+                    curator: await dappContract.hasRole(CURATOR_ROLE, userAddress),
+                    arbiter: await dappContract.hasRole(ARBITER_ROLE, userAddress)
+                };
+
+                // Update roles display
+                const rolesContainer = document.getElementById('userRoles');
+                rolesContainer.innerHTML = '';
+                
+                const roleNames = {
+                    admin: 'Admin',
+                    artist: 'Artist',
+                    renter: 'Renter',
+                    curator: 'Curator',
+                    arbiter: 'Arbiter'
+                };
+
+                let hasRole = false;
+                for (const [key, value] of Object.entries(userRoles)) {
+                    if (value) {
+                        hasRole = true;
+                        rolesContainer.innerHTML += `<span class="role-badge">${roleNames[key]}</span>`;
+                    }
+                }
+
+                if (!hasRole) {
+                    rolesContainer.innerHTML = '<span class="role-badge" style="background: var(--text-muted);">None</span>';
+                }
+
+                // Show/hide nav items based on roles
+                document.getElementById('artistNav').style.display = 
+                    userRoles.artist ? 'block' : 'none';
+                document.getElementById('adminNav').style.display = 
+                    (userRoles.admin || userRoles.curator) ? 'block' : 'none';
+                document.getElementById('arbiterPanel').style.display = 
+                    userRoles.arbiter ? 'block' : 'none';
+
+            } catch (error) {
+                console.error('Error checking roles:', error);
+            }
+        }
+
+        // ==================== USER ACTIONS ====================
+        async function registerUser() {
+            try {
+                showToast('Registering...', 'info');
+                const tx = await dappContract.registerUser();
+                await tx.wait();
+                showToast('Successfully registered!', 'success');
+                await loadUserData();
+            } catch (error) {
+                console.error('Registration error:', error);
+                showToast(error.reason || 'Registration failed', 'error');
+            }
+        }
+
+        // ==================== ARTWORKS ====================
+        async function loadArtworks() {
+            const grid = document.getElementById('artworkGrid');
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center;"><div class="loading"></div> Loading artworks...</div>';
+
+            try {
+                // For demo, we'll try to load first 10 artworks
+                const artworks = [];
+                for (let i = 0; i < 10; i++) {
+                    try {
+                        const artwork = await platformContract.getArtwork(i);
+                        if (artwork.artist !== '0x0000000000000000000000000000000000000000') {
+                            artworks.push({ tokenId: i, ...artwork });
+                        }
+                    } catch {
+                        break;
+                    }
+                }
+
+                if (artworks.length === 0) {
+                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No artworks found. Be the first to tokenize!</div>';
+                    return;
+                }
+
+                grid.innerHTML = '';
+                for (const art of artworks) {
+                    grid.innerHTML += createArtworkCard(art);
+                }
+
+                document.getElementById('totalArtworks').textContent = artworks.length;
+
+            } catch (error) {
+                console.error('Error loading artworks:', error);
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--error);">Failed to load artworks</div>';
+            }
+        }
+
+        function createArtworkCard(artwork) {
+            const pricePerDay = ethers.utils.formatUnits(artwork.pricePerDay, tokenDecimals);
+            const deposit = ethers.utils.formatUnits(artwork.depositAmount, tokenDecimals);
+            
+            return `
+                <div class="artwork-card">
+                    <div class="artwork-image">🖼️</div>
+                    <div class="artwork-info">
+                        <h3>Artwork #${artwork.tokenId}</h3>
+                        <div class="artwork-meta">
+                            <span>${pricePerDay} RAT/day</span>
+                            <span>Deposit: ${deposit} RAT</span>
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <span class="badge ${artwork.isAvailable ? 'badge-available' : 'badge-rented'}">
+                                ${artwork.isAvailable ? 'Available' : 'Rented'}
+                            </span>
+                            <span class="badge ${artwork.isPhysical ? 'badge-physical' : 'badge-digital'}">
+                                ${artwork.isPhysical ? 'Physical' : 'Digital'}
+                            </span>
+                        </div>
+                        <button 
+                            onclick="openRentModal(${artwork.tokenId}, '${pricePerDay}', '${deposit}')"
+                            ${!artwork.isAvailable ? 'disabled' : ''}>
+                            ${artwork.isAvailable ? 'Rent Now' : 'Not Available'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== RENTAL ====================
+        function openRentModal(tokenId, pricePerDay, deposit) {
+            document.getElementById('rentTokenId').value = tokenId;
+            document.getElementById('rentArtworkName').textContent = `Artwork #${tokenId}`;
+            document.getElementById('rentPricePerDay').textContent = pricePerDay;
+            document.getElementById('rentDeposit').textContent = deposit;
+            updateRentTotal();
+            document.getElementById('rentModal').classList.add('active');
+        }
+
+        function updateRentTotal() {
+            const duration = parseInt(document.getElementById('rentDuration').value) || 0;
+            const pricePerDay = parseFloat(document.getElementById('rentPricePerDay').textContent) || 0;
+            const deposit = parseFloat(document.getElementById('rentDeposit').textContent) || 0;
+            const total = (pricePerDay * duration) + deposit;
+            document.getElementById('rentTotalCost').textContent = total.toFixed(2);
+        }
+
+        document.getElementById('rentDuration')?.addEventListener('input', updateRentTotal);
+
+        async function rentArtwork(event) {
+            event.preventDefault();
+            
+            const tokenId = document.getElementById('rentTokenId').value;
+            const duration = document.getElementById('rentDuration').value;
+            const allowSublease = document.getElementById('allowSublease').checked;
+            const totalCost = document.getElementById('rentTotalCost').textContent;
+
+            try {
+                showToast('Approving tokens...', 'info');
+                
+                // Approve tokens
+                const amount = ethers.utils.parseUnits(totalCost, tokenDecimals);
+                const approveTx = await tokenContract.approve(CONFIG.DAPP_ADDRESS, amount);
+                await approveTx.wait();
+
+                showToast('Processing rental...', 'info');
+                
+                // Rent artwork
+                const tx = await dappContract.rent(tokenId, duration, allowSublease);
+                await tx.wait();
+
+                showToast('Rental successful!', 'success');
+                closeModal('rentModal');
+                loadArtworks();
+                loadUserRentals();
+
+            } catch (error) {
+                console.error('Rental error:', error);
+                showToast(error.reason || 'Rental failed', 'error');
+            }
+        }
+
+        async function loadUserRentals() {
+            if (!dappContract || !userAddress) return;
+
+            const table = document.getElementById('rentalsTable');
+            table.innerHTML = '<tr><td colspan="6" style="text-align: center;"><div class="loading"></div></td></tr>';
+
+            try {
+                const rentalIds = await dappContract.getUserRentals(userAddress);
+                
+                if (rentalIds.length === 0) {
+                    table.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No rentals found</td></tr>';
+                    return;
+                }
+
+                table.innerHTML = '';
+                for (const rentalId of rentalIds) {
+                    const rental = await platformContract.getRental(rentalId);
+                    if (rental.isActive) {
+                        const startDate = new Date(rental.startTime.toNumber() * 1000).toLocaleDateString();
+                        const endDate = new Date(rental.endTime.toNumber() * 1000).toLocaleDateString();
+                        const deposit = ethers.utils.formatUnits(rental.depositPaid, tokenDecimals);
+
+                        table.innerHTML += `
+                            <tr>
+                                <td>#${rentalId}</td>
+                                <td>Artwork #${rental.tokenId}</td>
+                                <td>${startDate}</td>
+                                <td>${endDate}</td>
+                                <td>${deposit} RAT</td>
+                                <td>
+                                    <button class="btn-warning" onclick="returnRental(${rentalId})">Return</button>
+                                    <button class="btn-secondary" onclick="openSubleaseModal(${rentalId})">Sublease</button>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error loading rentals:', error);
+                table.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--error);">Failed to load rentals</td></tr>';
+            }
+        }
+
+        async function returnRental(rentalId) {
+            try {
+                showToast('Processing return...', 'info');
+                const tx = await dappContract.returnRental(rentalId);
+                await tx.wait();
+                showToast('Rental returned successfully!', 'success');
+                loadUserRentals();
+                loadUserData();
+            } catch (error) {
+                console.error('Return error:', error);
+                showToast(error.reason || 'Return failed', 'error');
+            }
+        }
+
+        function openSubleaseModal(rentalId) {
+            document.getElementById('subleaseRentalId').value = rentalId;
+            document.getElementById('subleaseModal').classList.add('active');
+        }
+
+        async function subleaseArtwork(event) {
+            event.preventDefault();
+            
+            const rentalId = document.getElementById('subleaseRentalId').value;
+            const newRenter = document.getElementById('subleaseAddress').value;
+            const duration = document.getElementById('subleaseDuration').value;
+
+            try {
+                showToast('Processing sublease...', 'info');
+                const tx = await dappContract.sublease(rentalId, newRenter, duration);
+                await tx.wait();
+                showToast('Sublease successful!', 'success');
+                closeModal('subleaseModal');
+                loadUserRentals();
+            } catch (error) {
+                console.error('Sublease error:', error);
+                showToast(error.reason || 'Sublease failed', 'error');
+            }
+        }
+
+        // ==================== ARTIST FUNCTIONS ====================
+        async function tokenizeArtwork(event) {
+            event.preventDefault();
+
+            const uri = document.getElementById('artworkUri').value;
+            const pricePerDay = document.getElementById('pricePerDay').value;
+            const depositAmount = document.getElementById('depositAmount').value;
+            const isPhysical = document.getElementById('isPhysical').checked;
+
+            try {
+                showToast('Tokenizing artwork...', 'info');
+                
+                const priceBN = ethers.utils.parseUnits(pricePerDay, tokenDecimals);
+                const depositBN = ethers.utils.parseUnits(depositAmount, tokenDecimals);
+
+                const tx = await dappContract.createArtwork(uri, priceBN, depositBN, isPhysical);
+                const receipt = await tx.wait();
+
+                showToast('Artwork tokenized successfully!', 'success');
+                document.getElementById('tokenizeForm').reset();
+                loadArtistArtworks();
+
+            } catch (error) {
+                console.error('Tokenization error:', error);
+                showToast(error.reason || 'Tokenization failed', 'error');
+            }
+        }
+
+        async function loadArtistArtworks() {
+            if (!dappContract || !userAddress) return;
+
+            const grid = document.getElementById('myArtworksGrid');
+            grid.innerHTML = '<div class="loading"></div>';
+
+            try {
+                const artworkIds = await dappContract.getArtistArtworks(userAddress);
+                
+                if (artworkIds.length === 0) {
+                    grid.innerHTML = '<div style="color: var(--text-muted);">No artworks created yet</div>';
+                    return;
+                }
+
+                grid.innerHTML = '';
+                for (const tokenId of artworkIds) {
+                    const artwork = await platformContract.getArtwork(tokenId);
+                    grid.innerHTML += createArtworkCard({ tokenId: tokenId.toNumber(), ...artwork });
+                }
+
+            } catch (error) {
+                console.error('Error loading artist artworks:', error);
+                grid.innerHTML = '<div style="color: var(--error);">Failed to load artworks</div>';
+            }
+        }
+
+        // ==================== ADMIN FUNCTIONS ====================
+        async function verifyKYC() {
+            const address = document.getElementById('kycAddress').value;
+            if (!ethers.utils.isAddress(address)) {
+                showToast('Invalid address', 'error');
+                return;
+            }
+
+            try {
+                showToast('Verifying KYC...', 'info');
+                const tx = await dappContract.verifyUserKYC(address);
+                await tx.wait();
+                showToast('KYC verified!', 'success');
+                document.getElementById('kycAddress').value = '';
+            } catch (error) {
+                console.error('KYC verification error:', error);
+                showToast(error.reason || 'KYC verification failed', 'error');
+            }
+        }
+
+        async function grantRole(role) {
+            const address = document.getElementById('roleAddress').value;
+            if (!ethers.utils.isAddress(address)) {
+                showToast('Invalid address', 'error');
+                return;
+            }
+
+            try {
+                showToast(`Granting ${role} role...`, 'info');
+                let tx;
+                
+                switch (role) {
+                    case 'curator':
+                        tx = await dappContract.grantCuratorRole(address);
+                        break;
+                    case 'arbiter':
+                        tx = await dappContract.grantArbiterRole(address);
+                        break;
+                    case 'artist':
+                        tx = await dappContract.grantArtistRole(address);
+                        break;
+                }
+                
+                await tx.wait();
+                showToast(`${role} role granted!`, 'success');
+                document.getElementById('roleAddress').value = '';
+            } catch (error) {
+                console.error('Grant role error:', error);
+                showToast(error.reason || 'Failed to grant role', 'error');
+            }
+        }
+
+        async function verifyArtist() {
+            const address = document.getElementById('artistAddress').value;
+            if (!ethers.utils.isAddress(address)) {
+                showToast('Invalid address', 'error');
+                return;
+            }
+
+            try {
+                showToast('Verifying artist...', 'info');
+                const tx = await platformContract.verifyArtist(address);
+                await tx.wait();
+                showToast('Artist verified!', 'success');
+                document.getElementById('artistAddress').value = '';
+            } catch (error) {
+                console.error('Artist verification error:', error);
+                showToast(error.reason || 'Artist verification failed', 'error');
+            }
+        }
+
+        // ==================== DISPUTES ====================
+        async function createDispute() {
+            const rentalId = document.getElementById('disputeRentalId').value;
+            const reason = document.getElementById('disputeReason').value;
+
+            if (!rentalId || !reason) {
+                showToast('Please fill all fields', 'error');
+                return;
+            }
+
+            try {
+                showToast('Creating dispute...', 'info');
+                const tx = await dappContract.openDispute(rentalId, reason);
+                await tx.wait();
+                showToast('Dispute created!', 'success');
+                document.getElementById('disputeRentalId').value = '';
+                document.getElementById('disputeReason').value = '';
+            } catch (error) {
+                console.error('Dispute creation error:', error);
+                showToast(error.reason || 'Failed to create dispute', 'error');
+            }
+        }
+
+        async function voteOnDispute(disputeId, inFavor) {
+            try {
+                showToast('Submitting vote...', 'info');
+                const tx = await dappContract.voteDispute(disputeId, inFavor);
+                await tx.wait();
+                showToast('Vote submitted!', 'success');
+            } catch (error) {
+                console.error('Vote error:', error);
+                showToast(error.reason || 'Vote failed', 'error');
+            }
+        }
+
+        // ==================== UI HELPERS ====================
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function showToast(message, type = 'info') {
+            // Remove existing toasts
+            document.querySelectorAll('.toast').forEach(t => t.remove());
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // Close modals on outside click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
