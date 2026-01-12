@@ -1,6 +1,88 @@
-# 25-26-solidity-project
+# Projet solidity: RENTART
 
-## RentART - Plateforme de Location d'Art en Web3
+## 1. Mise en place de l'environnement de développement
+ 
+### Prérequis
+- **Remix IDE** : environnement de développement en ligne pour Solidity
+- **MetaMask** : portefeuille Ethereum pour interagir avec les contrats
+- **Réseau de test** : Sepolia, une blockchain publique sur laquelle Google Cloud octroie 0.05 ETH gratuitement. Elle permet de facilement la lier à mon interface web.
+
+### Étapes d'installation
+1. Ouvrir [Remix IDE](https://remix.ethereum.org)
+2. Importer les trois fichiers de contrats dans le dossier `contracts/`
+3. Compiler avec Solidity 0.8.x
+4. Connecter MetaMask au réseau de test
+5. Déployer les contrats dans l'ordre : Token → NFT → DAPP
+
+---
+
+## 2. Introduction
+
+RentART est une plateforme Web3 de location d'œuvres d'art tokenisées. Elle permet aux artistes de monétiser leurs créations via des locations sécurisées par smart contracts, tout en garantissant traçabilité et transparence grâce à la blockchain. Le projet repose sur trois contrats : un token ERC-20 ($RENTART), un contrat NFT pour les œuvres, et un contrat principal gérant les locations.
+
+---
+
+## 3. Explication détaillée de l'implémentation
+
+### 3.1 contractTOKENRentArt.sol - Token $RENTART
+
+| Fonction | Description |
+|----------|-------------|
+| `constructor()` | Initialise le token avec nom, symbole et supply initiale |
+| `mint(address, uint256)` | Crée de nouveaux tokens (réservé admin) |
+| `burn(uint256)` | Détruit des tokens du caller |
+| `transfer(address, uint256)` | Transfère des tokens entre utilisateurs |
+| `approve(address, uint256)` | Autorise un tiers à dépenser des tokens |
+
+### 3.2 contractNFTRentArt.sol - NFTs des œuvres
+
+| Fonction | Description |
+|----------|-------------|
+| `mintArtwork(string uri)` | Crée un NFT lié à une œuvre (artiste uniquement) |
+| `setRoyalties(uint256 tokenId, uint256 percent)` | Définit le pourcentage de royalties |
+| `tokenURI(uint256 tokenId)` | Retourne les métadonnées IPFS de l'œuvre |
+| `ownerOf(uint256 tokenId)` | Retourne le propriétaire actuel |
+| `transferFrom(address, address, uint256)` | Transfère la propriété du NFT |
+
+### 3.3 contractDAPPRentArt.sol - Gestion des locations
+
+| Fonction | Description |
+|----------|-------------|
+| `listForRent(uint256 tokenId, uint256 price, uint256 duration)` | Met une œuvre en location |
+| `rent(uint256 tokenId)` | Loue une œuvre (paiement en $RENTART) |
+| `returnArtwork(uint256 tokenId)` | Retourne l'œuvre et libère le dépôt |
+| `claimRoyalties(uint256 tokenId)` | L'artiste récupère ses royalties |
+| `openDispute(uint256 rentalId)` | Ouvre un litige pour arbitrage DAO |
+| `resolveDispute(uint256 rentalId, bool refund)` | Résout le litige (arbitres DAO) |
+| `withdrawDeposit(uint256 rentalId)` | Récupère le dépôt après location |
+
+### Architecture des données
+
+```
+Rental {
+    tokenId: uint256
+    renter: address
+    owner: address
+    pricePerDay: uint256
+    deposit: uint256
+    startTime: uint256
+    endTime: uint256
+    active: bool
+}
+```
+
+---
+
+## 4. Flux de location
+
+1. **Artiste** : mint NFT → `listForRent()`
+2. **Locataire** : `approve()` tokens → `rent()`
+3. **Fin de location** : `returnArtwork()` → dépôt libéré
+4. **Litige** : `openDispute()` → vote DAO → `resolveDispute()`
+
+## mise en place de l'environnement de développement
+## introduction résumer briévement le but du projet
+## explication détaillée de l'implémentation, fonction par fonction
 
 ### 1. Introduction
 Le marché de l’art souffre d’un paradoxe : des œuvres de grande valeur restent inaccessibles ou peu monétisées hors ventes directes. Les artistes peinent à générer des revenus récurrents, tandis que les collectionneurs et institutions manquent d’outils sécurisés pour louer des pièces exceptionnelles. RentART propose une solution via la blockchain et les NFT, transformant la location d’art en un écosystème transparent, sécurisé et économiquement viable. La plateforme Web3 intègre un token utilitaire ($RENTART), des contrats intelligents et une gouvernance DAO pour répondre aux défis du secteur.
