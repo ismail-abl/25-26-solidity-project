@@ -3,6 +3,9 @@
 **/artifacts/**
 
 # Remix plugin state folders
+.deploys/
+deploys/
+.deps/
 deps/
 states/
 
@@ -13,7 +16,4 @@ states/
 # Optional
 .env
 .env.local
-
-.deps/
-artifacts/
 test/
