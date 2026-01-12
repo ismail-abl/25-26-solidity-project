@@ -1,0 +1,8 @@
+0x4c95e6a42122242d26de9ebe8fafa81561fadced Admin 
+0xb64529b274326afdd20369681a4e58e50bc6a10f Artist 
+0x3b7ee6a3d6693ea30387fd37b25e1a679359ba26 Renter 
+
+Contracts:
+Token
+NFT
+DAPP
