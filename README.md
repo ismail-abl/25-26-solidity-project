@@ -5,6 +5,7 @@
 ### Prérequis
 - **Remix IDE** : environnement de développement en ligne pour Solidity
 - **MetaMask** : portefeuille Ethereum pour interagir avec les contrats
+  
   Normalement suffit pour mettre en place des portefeuilles de test et initier les transactions. Le cas échéant:
 - **Réseau de test** : Sepolia, une blockchain publique sur laquelle Google Cloud octroie 0.05 ETH gratuitement. Elle permet de facilement la lier à mon interface web.
 
